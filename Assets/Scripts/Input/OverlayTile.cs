@@ -2,18 +2,31 @@ using System.Collections.Generic;
 using UnityEngine;
 using static ArrowTranslator;
 
+/// <summary>
+/// Represents a tile in the overlay grid. This class manages the tile's state,
+/// including its display properties and pathfinding-related values.
+/// </summary>
 public class OverlayTile : MonoBehaviour
 {
-    [HideInInspector] public int G;
-    [HideInInspector] public int H;
-    public int F => G + H;
+    public int G { get; set; } // Movement cost from the start node to this tile.
+    public int H { get; set; } // Estimated movement cost from this tile to the end node.
+    public int F => G + H; // Total cost function (F = G + H) for A* pathfinding.
 
-    [HideInInspector] public bool isBlocked = false;
-    [HideInInspector] public OverlayTile Previous;
-    [HideInInspector] public Vector3Int gridLocation;
-    public Vector2Int grid2DLocation => new(gridLocation.x, gridLocation.y);
+    public bool isBlocked = false;
+    public OverlayTile Previous { get; set; }
+    public Vector3Int GridLocation { get; set; }
+    public Vector2Int Grid2DLocation => new(GridLocation.x, GridLocation.y);
     public List<Sprite> arrows;
-    
+
+    private SpriteRenderer _mainSpriteRenderer;
+    private SpriteRenderer _childSpriteRenderer;
+
+    private void Awake()
+    {
+        _mainSpriteRenderer = GetComponent<SpriteRenderer>();
+        _childSpriteRenderer = GetComponentsInChildren<SpriteRenderer>()[1];
+    }
+
     private void Update()
     {
         if (Input.GetMouseButtonDown(0))
@@ -22,25 +35,45 @@ public class OverlayTile : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Hides the tile by setting its color to fully transparent.
+    /// </summary>
     public void HideTile()
     {
-        gameObject.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 0);
+        if (_mainSpriteRenderer)
+        {
+            _mainSpriteRenderer.color = new Color(1, 1, 1, 0);
+        }
     }
 
+    /// <summary>
+    /// Shows the tile by setting its color to fully opaque.
+    /// </summary>
     public void ShowTile()
     {
-        gameObject.GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
+        if (_mainSpriteRenderer)
+        {
+            _mainSpriteRenderer.color = new Color(1, 1, 1, 1);
+        }
     }
     
+    /// <summary>
+    /// Sets the sprite of the child SpriteRenderer based on the given direction.
+    /// </summary>
+    /// <param name="d">The direction to set the arrow sprite.</param>
     public void SetSprite(ArrowDirection d)
     {
+        if (!_childSpriteRenderer) return;
+        
         if (d == ArrowDirection.None)
-            GetComponentsInChildren<SpriteRenderer>()[1].color = new Color(1, 1, 1, 0);
+        {
+            _childSpriteRenderer.color = new Color(1, 1, 1, 0);
+        }
         else
         {
-            GetComponentsInChildren<SpriteRenderer>()[1].color = new Color(1, 1, 1, 1);
-            GetComponentsInChildren<SpriteRenderer>()[1].sprite = arrows[(int)d];
-            GetComponentsInChildren<SpriteRenderer>()[1].sortingOrder = gameObject.GetComponent<SpriteRenderer>().sortingOrder;
+            _childSpriteRenderer.color = new Color(1, 1, 1, 1);
+            _childSpriteRenderer.sprite = arrows[(int)d];
+            _childSpriteRenderer.sortingOrder = _mainSpriteRenderer ? _mainSpriteRenderer.sortingOrder : 0;
         }
     }
 }

@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class RangeFinder
 {
-    public List<OverlayTile> GetTilesInRange(Vector2Int location, int range)
+    public static List<OverlayTile> GetTilesInRange(Vector2Int location, int range)
     {
-        var startingTile = MapManager.Instance.map[location];
+        var startingTile = MapManager.Instance.Map[location];
         var inRangeTiles = new List<OverlayTile>();
         var stepCount = 0;
 
@@ -19,7 +19,7 @@ public class RangeFinder
 
             foreach (var item in tilesForPreviousStep)
             {
-                surroundingTiles.AddRange(MapManager.Instance.GetSurroundingTiles(new Vector2Int(item.gridLocation.x, item.gridLocation.y)));
+                surroundingTiles.AddRange(MapManager.Instance.GetSurroundingTiles(new Vector2Int(item.GridLocation.x, item.GridLocation.y)));
             }
 
             inRangeTiles.AddRange(surroundingTiles);

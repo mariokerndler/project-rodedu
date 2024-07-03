@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class ArrowTranslator
+public static class ArrowTranslator
 {
     public enum ArrowDirection
     {
@@ -19,12 +19,12 @@ public class ArrowTranslator
         RightFinished = 12
     }
     
-    public ArrowDirection TranslateDirection(OverlayTile previousTile, OverlayTile currentTile, OverlayTile futureTile)
+    public static ArrowDirection TranslateDirection(OverlayTile previousTile, OverlayTile currentTile, OverlayTile futureTile)
         {
             var isFinal = futureTile == null;
 
-            var pastDirection = previousTile != null ? (Vector2Int)(currentTile.gridLocation - previousTile.gridLocation) : new Vector2Int(0, 0);
-            var futureDirection = futureTile != null ? (Vector2Int)(futureTile.gridLocation - currentTile.gridLocation) : new Vector2Int(0, 0);
+            var pastDirection = previousTile != null ? (Vector2Int)(currentTile.GridLocation - previousTile.GridLocation) : new Vector2Int(0, 0);
+            var futureDirection = futureTile != null ? (Vector2Int)(futureTile.GridLocation - currentTile.GridLocation) : new Vector2Int(0, 0);
             var direction = pastDirection != futureDirection ? pastDirection + futureDirection : futureDirection;
 
             if (direction == new Vector2(0, 1) && !isFinal)
