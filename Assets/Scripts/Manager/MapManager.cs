@@ -15,60 +15,77 @@ public class MapManager : Singleton<MapManager>
     public Dictionary<Vector2Int, OverlayTile> Map;
     public bool ignoreBottomTiles;
     
-    private void Start()
+    public void LoadMap(int index)
     {
-        ConstructMapDict();
-    }
+        // Get all tilemaps
+        var tilemaps = GetComponentsInChildren<Tilemap>();
 
-    private void ConstructMapDict()
-    {
-        // Get all Tilemap components in children, sorted by descending sorting order.
-        var tileMaps = GetComponentsInChildren<Tilemap>()
-            .OrderByDescending(x => x.GetComponent<TilemapRenderer>().sortingOrder);
+        // Deactivate them
+        foreach (var tilemap in tilemaps)
+        {
+            tilemap.gameObject.SetActive(false);
+        }
         
+        if (index > tilemaps.Length - 1 || index < 0)
+        {
+            Debug.LogError("Index out of bounds, cannot load map.");
+            return;
+        }
+        
+        // Clear container
+        for (var i = 0; i < overlayContainer.transform.childCount; i++)
+        {
+            Destroy(overlayContainer.transform.GetChild(i));
+        }
+
+        var tm = tilemaps[index];
+        tm.gameObject.SetActive(true);
+        
+        ConstructMapDict(tm);
+    }
+    
+    private void ConstructMapDict(Tilemap tm)
+    {
         // Initialize the map dictionary.
         Map = new Dictionary<Vector2Int, OverlayTile>();
+        
+        var bounds = tm.cellBounds;
 
-        // Loop through each Tilemap.
-        foreach (var tm in tileMaps)
+        // Loop through each cell in the Tilemap.
+        for (var z = bounds.max.z; z >= bounds.min.z; z--)
         {
-            var bounds = tm.cellBounds;
-
-            // Loop through each cell in the Tilemap.
-            for (var z = bounds.max.z; z >= bounds.min.z; z--)
+            // Ignore bottom layer tiles if specified.
+            if (z == 0 && ignoreBottomTiles) continue;
+            
+            for (var y = bounds.min.y; y < bounds.max.y; y++)
             {
-                // Ignore bottom layer tiles if specified.
-                if (z == 0 && ignoreBottomTiles) continue;
-                
-                for (var y = bounds.min.y; y < bounds.max.y; y++)
+                for (var x = bounds.min.x; x < bounds.max.x; x++)
                 {
-                    for (var x = bounds.min.x; x < bounds.max.x; x++)
-                    {
-                        var cellPosition = new Vector3Int(x, y, z);
-                        
-                        // Skip cells that do not have a tile.
-                        if (!tm.HasTile(cellPosition)) continue;
+                    var cellPosition = new Vector3Int(x, y, z);
+                    
+                    // Skip cells that do not have a tile.
+                    if (!tm.HasTile(cellPosition)) continue;
 
-                        var gridPosition = new Vector2Int(x, y);
-                        
-                        // Skip cells that already have an overlay tile.
-                        if (Map.ContainsKey(gridPosition)) continue;
+                    var gridPosition = new Vector2Int(x, y);
+                    
+                    // Skip cells that already have an overlay tile.
+                    if (Map.ContainsKey(gridPosition)) continue;
 
-                        // Instantiate and position the overlay tile.
-                        var overlayTile = Instantiate(overlayPrefab, overlayContainer.transform);
-                        var cellWorldPosition = tm.GetCellCenterWorld(cellPosition);
-                        overlayTile.transform.position = new Vector3(cellWorldPosition.x, cellWorldPosition.y,
-                            cellWorldPosition.z + 1);
-                        overlayTile.GetComponent<SpriteRenderer>().sortingOrder =
-                            tm.GetComponent<TilemapRenderer>().sortingOrder;
-                        overlayTile.GridLocation = cellPosition;
+                    // Instantiate and position the overlay tile.
+                    var overlayTile = Instantiate(overlayPrefab, overlayContainer.transform);
+                    var cellWorldPosition = tm.GetCellCenterWorld(cellPosition);
+                    overlayTile.transform.position = new Vector3(cellWorldPosition.x, cellWorldPosition.y,
+                        cellWorldPosition.z + 1);
+                    overlayTile.GetComponent<SpriteRenderer>().sortingOrder =
+                        tm.GetComponent<TilemapRenderer>().sortingOrder;
+                    overlayTile.GridLocation = cellPosition;
 
-                        // Add the overlay tile to the map.
-                        Map.Add(gridPosition, overlayTile);
-                    }
+                    // Add the overlay tile to the map.
+                    Map.Add(gridPosition, overlayTile);
                 }
             }
         }
+        
     }
     
     /// <summary>

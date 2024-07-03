@@ -13,7 +13,7 @@ public class GameManager : Singleton<GameManager>
     
     public void StartGame()
     {
-
+        MapManager.Instance.LoadMap(1);
     }
 
     public void LoadNextRoom()
