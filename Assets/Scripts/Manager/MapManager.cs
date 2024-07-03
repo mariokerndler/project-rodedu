@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -13,8 +14,13 @@ public class MapManager : Singleton<MapManager>
     
     public Dictionary<Vector2Int, OverlayTile> Map;
     public bool ignoreBottomTiles;
-
+    
     private void Start()
+    {
+        ConstructMapDict();
+    }
+
+    private void ConstructMapDict()
     {
         // Get all Tilemap components in children, sorted by descending sorting order.
         var tileMaps = GetComponentsInChildren<Tilemap>()
