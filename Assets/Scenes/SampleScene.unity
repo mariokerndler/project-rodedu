@@ -408,7 +408,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &920268048
 Transform:
   m_ObjectHideFlags: 0
@@ -1023,6 +1023,16 @@ MonoBehaviour:
   _persistent: 1
   overlayPrefab: {fileID: 2803255771978388380, guid: d767b3695c8387b4194623179ba8132e, type: 3}
   overlayContainer: {fileID: 105025152}
+  creatureStrengths:
+  - StrengthLevel: 1
+    Creatures:
+    - {fileID: 1527555119064343503, guid: b73072d81413e3e49991bdea94a3a5bb, type: 3}
+  - StrengthLevel: 2
+    Creatures:
+    - {fileID: 1527555119064343503, guid: 06507761d1935244f8b7f1f6863bbf17, type: 3}
+  - StrengthLevel: 3
+    Creatures:
+    - {fileID: 1527555119064343503, guid: cec09a1b835f4c54ea94870850545bc5, type: 3}
   ignoreBottomTiles: 1
 --- !u!156049354 &1131743184
 Grid:

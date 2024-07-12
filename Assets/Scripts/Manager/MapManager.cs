@@ -1,8 +1,8 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Linq;
+using Random = UnityEngine.Random;
 
 /// <summary>
 /// Manages the map and overlay tiles in the game.
@@ -11,9 +11,15 @@ public class MapManager : Singleton<MapManager>
 {
     public OverlayTile overlayPrefab;
     public GameObject overlayContainer;
+    public GameObject creatureContainer;
+
+    public List<CreatureStrength> creatureStrengths = new List<CreatureStrength>();
     
-    public Dictionary<Vector2Int, OverlayTile> Map;
+    public Dictionary<Vector2Int, OverlayTile> Map { get; private set; }
     public bool ignoreBottomTiles;
+
+    private Tilemap _activeTilemap;
+    private readonly Dictionary<Vector3, Creature> _currentCreatures = new Dictionary<Vector3, Creature>();
     
     public void LoadMap(int index)
     {
@@ -40,8 +46,124 @@ public class MapManager : Singleton<MapManager>
 
         var tm = tilemaps[index];
         tm.gameObject.SetActive(true);
+        _activeTilemap = tm;
         
         ConstructMapDict(tm);
+    }
+
+    public void LoadCreatures(int room, int floor)
+    {
+        if (Map is null || Map.Count <= 0) return;
+        
+        if (creatureStrengths.Count <= 0) return;
+        
+        _currentCreatures.Clear();
+        
+        var creaturesToLoad = GetCreatures(room, floor);
+
+        var enemyTilePositions = GetEnemyTiles();
+
+        foreach (var creature in creaturesToLoad)
+        {
+            // Check if there is enough room
+            if (creaturesToLoad.Count > enemyTilePositions.Count)
+            {
+                // TODO: Maybe handle this differently, if there is no space, we shrink the amount of enemies spawned.
+                Debug.LogError("Not enough space to spawn enemies.");
+                break;
+            }
+            
+            // Get random spawn tile
+            var randomTile = GetRandomTile(enemyTilePositions);
+
+            var createdCreature = Instantiate(creature.gameObject, creatureContainer.transform);
+            createdCreature.transform.position = randomTile.transform.position;
+            createdCreature.GetComponent<SpriteRenderer>().sortingOrder =
+                randomTile.GetComponent<SpriteRenderer>().sortingOrder;
+
+            _currentCreatures[randomTile.transform.position] = createdCreature.GetComponent<Creature>();
+        }
+    }
+    
+    private List<OverlayTile> GetEnemyTiles()
+    {
+        var size = _activeTilemap.cellBounds.xMax - CalculateRoundedEven(_activeTilemap.cellBounds.size.x);
+        var filteredTiles = new List<OverlayTile>();
+        foreach (var (gridPosition, tile) in Map)
+        {
+            if (gridPosition.x >= size)
+            {
+                filteredTiles.Add(tile);
+            }
+        }
+        
+        if (filteredTiles.Count != 0) return filteredTiles;
+        
+        Debug.LogWarning("No elements found with key's x coordinate above the threshold.");
+        return null;
+    }
+
+    private OverlayTile GetRandomTile(List<OverlayTile> tiles)
+    {
+        OverlayTile randomTile;
+        do
+        {
+            var randomIndex = Random.Range(0, tiles.Count);
+            randomTile = tiles[randomIndex];
+        } while (_currentCreatures.ContainsKey(randomTile.transform.position));
+        
+        return randomTile;
+    }
+    
+    // TODO: VERY MUCH WIP
+    private List<Creature> GetCreatures(int room, int floor)
+    {
+        var creaturesToLoad = new List<Creature>();
+        switch (room)
+        {
+            case 1:
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 2));
+                break;
+            case 2:
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 3));
+                break;
+            case 3: 
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 2));
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor + 1, 1));
+                break;
+            case 4: 
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 2));
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor + 1, 2));
+                break;
+            case 5: 
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 1));
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor + 1, 3));
+                break;
+            case 6: 
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor, 2));
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor + 1, 2));
+                creaturesToLoad.AddRange(GetCreaturesForStrength(floor + 2, 1));
+                break;
+        }
+
+        return creaturesToLoad;
+    }
+
+    private List<Creature> GetCreaturesForStrength(int strength, int amount)
+    {
+        if (creatureStrengths.Count <= 0) return new List<Creature>();
+
+        var foundCreatures = creatureStrengths.Find(x => x.strengthLevel == strength);
+
+        var creatures = new List<Creature>();
+        
+        for (var i = 0; i < amount; i++)
+        {
+            var creature = foundCreatures.creatures[Random.Range(0, foundCreatures.creatures.Count)];
+            creatures.Add(creature);
+        }
+
+        return creatures;
     }
     
     private void ConstructMapDict(Tilemap tm)
@@ -49,17 +171,17 @@ public class MapManager : Singleton<MapManager>
         // Initialize the map dictionary.
         Map = new Dictionary<Vector2Int, OverlayTile>();
         
-        var bounds = tm.cellBounds;
+        var bound = tm.cellBounds;
 
         // Loop through each cell in the Tilemap.
-        for (var z = bounds.max.z; z >= bounds.min.z; z--)
+        for (var z = bound.max.z; z >= bound.min.z; z--)
         {
             // Ignore bottom layer tiles if specified.
             if (z == 0 && ignoreBottomTiles) continue;
             
-            for (var y = bounds.min.y; y < bounds.max.y; y++)
+            for (var y = bound.min.y; y < bound.max.y; y++)
             {
-                for (var x = bounds.min.x; x < bounds.max.x; x++)
+                for (var x = bound.min.x; x < bound.max.x; x++)
                 {
                     var cellPosition = new Vector3Int(x, y, z);
                     
@@ -109,5 +231,11 @@ public class MapManager : Singleton<MapManager>
             .Where(tileToCheck => Mathf.Abs(Map[tileToCheck].transform.position.z - Map[originTile].transform.position.z) <= 1)
             .Select(tileToCheck => Map[tileToCheck])
             .ToList();
+    }
+    
+    private static int CalculateRoundedEven(int x)
+    {
+        var eightyPercent = x * 0.7f;
+        return (int)(Mathf.Ceil(eightyPercent / 2));
     }
 }

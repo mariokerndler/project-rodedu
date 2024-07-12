@@ -13,7 +13,8 @@ public class GameManager : Singleton<GameManager>
     
     public void StartGame()
     {
-        MapManager.Instance.LoadMap(1);
+        MapManager.Instance.LoadMap(0);
+        MapManager.Instance.LoadCreatures(1, 1);
     }
 
     public void LoadNextRoom()

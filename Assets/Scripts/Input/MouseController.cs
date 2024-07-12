@@ -166,7 +166,7 @@ public class MouseController : MonoBehaviour
     /// <returns>The tile that the mouse is currently over, or null if no tile is found.</returns>
     private static RaycastHit2D? GetFocusedOnTile()
     {
-        var mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        var mousePos = Camera.main!.ScreenToWorldPoint(Input.mousePosition);
         var mousePos2d = new Vector2(mousePos.x, mousePos.y);
 
         var hits = Physics2D.RaycastAll(mousePos2d, Vector2.zero);

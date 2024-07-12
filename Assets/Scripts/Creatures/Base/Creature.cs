@@ -9,12 +9,13 @@ public abstract class Creature : MonoBehaviour
     protected int CurrentAP { get; set; }
     [field: SerializeField] public int MaxAP { get; private set; }
     [field: SerializeField] public int Speed { get; private set; }
-    [field: SerializeField] public int Attack { get; private set; }
     
     [field: SerializeField] public ECreatureClass Class { get; private set; }
     [field: SerializeField] public ECreatureType Type { get; private set; }
     [field: SerializeField] public Card[] Cards { get; private set; }
 
+    [HideInInspector] public OverlayTile standingOnTile;
+    
     protected Creature() {}
     
     protected void Init()

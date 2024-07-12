@@ -1,6 +1,6 @@
 ﻿public enum ECreatureClass
 {
     Knight,
-    Wizzard,
+    Wizard,
     Archer
 }
