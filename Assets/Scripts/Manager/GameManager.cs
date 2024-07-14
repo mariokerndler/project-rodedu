@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,28 +17,35 @@ public class GameManager : Singleton<GameManager>
         StartGame();
     }
     
-    // TODO: Turn this into a coroutine, to wait for placement finish
     public void StartGame()
     {
         SetupPlayer();
-        
+
+        StartCoroutine(LoadNextRoom());
+    }
+
+    public IEnumerator LoadNextRoom()
+    {
+        // TODO: Change how map is chosen.
         MapManager.Instance.LoadMap(0);
         MapManager.Instance.LoadCreatures(PlayerData.Room, PlayerData.Floor);
         
         PlayerPlacesCreatures();
-    }
 
-    public void LoadNextRoom()
-    {
-
-    }
-
-    public void LoadNextFloor()
-    {
+        yield return new WaitUntil(() => !MouseController.IsPlacingCreatures);
         
+        var creatureQueue = CreateTurnOrder();
+        TurnManager.Instance.InitTurn(creatureQueue, PlayerData);
+        
+        yield break;
     }
 
-    public void GameOver()
+    public IEnumerator LoadNextFloor()
+    {
+        yield break;
+    }
+
+    private void GameOver()
     {
         
     }
@@ -61,9 +69,30 @@ public class GameManager : Singleton<GameManager>
         MouseController.EnablePlayerPlacement(PlayerData.Creatures, tiles);
     }
 
-    private Queue<Creature> CreateTurnOrder()
+    private Queue<CreatureOwner> CreateTurnOrder()
     {
-        return new Queue<Creature>();
+        var enemyCreatures = MapManager.Instance.CurrentCreatures.Values.ToList();
+        var playerCreatures = PlayerData.Creatures;
+
+        var enemyCreatureOwner = enemyCreatures.Select(x => new CreatureOwner() { Owner = EOwner.Enemy, Creature = x })
+            .ToList();
+        var playerCreatureOwner = playerCreatures.Select(x => new CreatureOwner() { Owner = EOwner.Player, Creature = x })
+            .ToList();
+
+        var creatureOwnerList = new List<CreatureOwner>();
+        creatureOwnerList.AddRange(enemyCreatureOwner);
+        creatureOwnerList.AddRange(playerCreatureOwner);
+
+        var sortedCreatureOwnerList = creatureOwnerList.OrderBy(co => co.Creature.Speed).ToList();
+        var turnOrder = new Queue<CreatureOwner>();
+        
+        foreach (var creatureOwner in sortedCreatureOwnerList)
+        {
+            //Debug.Log($"Owner: {creatureOwner.Owner}, Creature Speed: {creatureOwner.Creature.Speed}");
+            turnOrder.Enqueue(creatureOwner);
+        }
+        
+        return turnOrder;
     }
 
 }

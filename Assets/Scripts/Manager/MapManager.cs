@@ -19,7 +19,11 @@ public class MapManager : Singleton<MapManager>
     public bool ignoreBottomTiles;
 
     private Tilemap _activeTilemap;
-    private readonly Dictionary<Vector3, Creature> _currentCreatures = new Dictionary<Vector3, Creature>();
+    public Dictionary<Vector3, Creature> CurrentCreatures
+    {
+        get;
+        private set;
+    }
     
     public void LoadMap(int index)
     {
@@ -57,7 +61,7 @@ public class MapManager : Singleton<MapManager>
         
         if (!Creatures || Creatures.CreatureStrengths.Count <= 0) return;
         
-        _currentCreatures.Clear();
+        CurrentCreatures = new Dictionary<Vector3, Creature>();
         
         var creaturesToLoad = GetCreatures(room, floor);
 
@@ -81,7 +85,7 @@ public class MapManager : Singleton<MapManager>
             createdCreature.GetComponent<SpriteRenderer>().sortingOrder =
                 randomTile.GetComponent<SpriteRenderer>().sortingOrder;
 
-            _currentCreatures[randomTile.transform.position] = createdCreature.GetComponent<Creature>();
+            CurrentCreatures[randomTile.transform.position] = createdCreature.GetComponent<Creature>();
         }
     }
     
@@ -139,7 +143,7 @@ public class MapManager : Singleton<MapManager>
         {
             var randomIndex = Random.Range(0, tiles.Count);
             randomTile = tiles[randomIndex];
-        } while (_currentCreatures.ContainsKey(randomTile.transform.position));
+        } while (CurrentCreatures.ContainsKey(randomTile.transform.position));
         
         return randomTile;
     }

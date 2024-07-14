@@ -22,7 +22,7 @@ public class MouseController : MonoBehaviour
     private bool _isMoving;
 
     // Creature placement
-    private bool IsPlacingCreatures => _creatureQueue.Count > 0;
+    public bool IsPlacingCreatures => _creatureQueue.Count > 0;
     private Queue<Creature> _creatureQueue = new Queue<Creature>();
     private List<OverlayTile> _availableTiles;
 

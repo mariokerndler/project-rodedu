@@ -101,7 +101,7 @@ MonoBehaviour:
   <MaxHealth>k__BackingField: 10
   <Armor>k__BackingField: 1
   <MaxAP>k__BackingField: 5
-  <Speed>k__BackingField: 2
+  <Speed>k__BackingField: 3
   <Class>k__BackingField: 1
   <Type>k__BackingField: 0
   <Cards>k__BackingField: []
