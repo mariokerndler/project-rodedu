@@ -13,7 +13,7 @@ public class MapManager : Singleton<MapManager>
     public GameObject overlayContainer;
     public GameObject creatureContainer;
 
-    public List<CreatureStrength> creatureStrengths = new List<CreatureStrength>();
+    public CreatureContainer Creatures;
     
     public Dictionary<Vector2Int, OverlayTile> Map { get; private set; }
     public bool ignoreBottomTiles;
@@ -55,13 +55,13 @@ public class MapManager : Singleton<MapManager>
     {
         if (Map is null || Map.Count <= 0) return;
         
-        if (creatureStrengths.Count <= 0) return;
+        if (!Creatures || Creatures.CreatureStrengths.Count <= 0) return;
         
         _currentCreatures.Clear();
         
         var creaturesToLoad = GetCreatures(room, floor);
 
-        var enemyTilePositions = GetEnemyTiles();
+        var enemyTilePositions = GetFilteredTiles(false);
 
         foreach (var creature in creaturesToLoad)
         {
@@ -85,23 +85,52 @@ public class MapManager : Singleton<MapManager>
         }
     }
     
-    private List<OverlayTile> GetEnemyTiles()
+    /// <summary>
+    /// Gets the tiles surrounding a given tile.
+    /// </summary>
+    /// <param name="originTile">The origin tile position.</param>
+    /// <returns>A list of surrounding overlay tiles.</returns>
+    public List<OverlayTile> GetSurroundingTiles(Vector2Int originTile)
     {
-        var size = _activeTilemap.cellBounds.xMax - CalculateRoundedEven(_activeTilemap.cellBounds.size.x);
+        // Define directions to check (right, left, up, down).
+        var directions = new[]
+        {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1)
+        };
+
+        // Check each direction and collect valid surrounding tiles.
+        return directions
+            .Select(direction => originTile + direction)
+            .Where(tileToCheck => Map.ContainsKey(tileToCheck))
+            .Where(tileToCheck => Mathf.Abs(Map[tileToCheck].transform.position.z - Map[originTile].transform.position.z) <= 1)
+            .Select(tileToCheck => Map[tileToCheck])
+            .ToList();
+    }
+
+    public List<OverlayTile> GetFilteredTiles(bool isPlayer)
+    {
+        var size = isPlayer 
+            ? _activeTilemap.cellBounds.xMin + CalculateRoundedEven(_activeTilemap.cellBounds.size.x) 
+            : _activeTilemap.cellBounds.xMax - CalculateRoundedEven(_activeTilemap.cellBounds.size.x);
+        
         var filteredTiles = new List<OverlayTile>();
+    
         foreach (var (gridPosition, tile) in Map)
         {
-            if (gridPosition.x >= size)
+            if (isPlayer ? gridPosition.x < size : gridPosition.x >= size)
             {
                 filteredTiles.Add(tile);
             }
         }
-        
-        if (filteredTiles.Count != 0) return filteredTiles;
-        
+    
+        if (filteredTiles.Count != 0) 
+            return filteredTiles;
+    
         Debug.LogWarning("No elements found with key's x coordinate above the threshold.");
         return null;
     }
+
 
     private OverlayTile GetRandomTile(List<OverlayTile> tiles)
     {
@@ -151,15 +180,16 @@ public class MapManager : Singleton<MapManager>
 
     private List<Creature> GetCreaturesForStrength(int strength, int amount)
     {
+        var creatureStrengths = Creatures.CreatureStrengths;
         if (creatureStrengths.Count <= 0) return new List<Creature>();
 
-        var foundCreatures = creatureStrengths.Find(x => x.strengthLevel == strength);
+        var foundCreatures = creatureStrengths.Find(x => x.StrengthLevel == strength);
 
         var creatures = new List<Creature>();
         
         for (var i = 0; i < amount; i++)
         {
-            var creature = foundCreatures.creatures[Random.Range(0, foundCreatures.creatures.Count)];
+            var creature = foundCreatures.Creatures[Random.Range(0, foundCreatures.Creatures.Count)];
             creatures.Add(creature);
         }
 
@@ -208,29 +238,6 @@ public class MapManager : Singleton<MapManager>
             }
         }
         
-    }
-    
-    /// <summary>
-    /// Gets the tiles surrounding a given tile.
-    /// </summary>
-    /// <param name="originTile">The origin tile position.</param>
-    /// <returns>A list of surrounding overlay tiles.</returns>
-    public List<OverlayTile> GetSurroundingTiles(Vector2Int originTile)
-    {
-        // Define directions to check (right, left, up, down).
-        var directions = new[]
-        {
-            new Vector2Int(1, 0), new Vector2Int(-1, 0),
-            new Vector2Int(0, 1), new Vector2Int(0, -1)
-        };
-
-        // Check each direction and collect valid surrounding tiles.
-        return directions
-            .Select(direction => originTile + direction)
-            .Where(tileToCheck => Map.ContainsKey(tileToCheck))
-            .Where(tileToCheck => Mathf.Abs(Map[tileToCheck].transform.position.z - Map[originTile].transform.position.z) <= 1)
-            .Select(tileToCheck => Map[tileToCheck])
-            .ToList();
     }
     
     private static int CalculateRoundedEven(int x)

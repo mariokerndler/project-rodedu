@@ -12,12 +12,19 @@ public class MouseController : MonoBehaviour
     public float speed;
     public int range;
     public GameObject characterPrefab;
+
+    public Transform characterContainer;
     
-    private CharacterInfo _character;
+    private Creature _character;
     private PathFinder _pathFinder;
     private List<OverlayTile> _path;
     private List<OverlayTile> _rangeFinderTiles;
     private bool _isMoving;
+
+    // Creature placement
+    private bool IsPlacingCreatures => _creatureQueue.Count > 0;
+    private Queue<Creature> _creatureQueue = new Queue<Creature>();
+    private List<OverlayTile> _availableTiles;
 
     private void Start()
     {
@@ -30,17 +37,19 @@ public class MouseController : MonoBehaviour
     private void LateUpdate()
     {
         var hit = GetFocusedOnTile();
-
+        
         if (hit.HasValue)
         {
             var tile = hit.Value.collider.GetComponent<OverlayTile>();
             UpdateCursor(tile);
 
+            /*
             if (_rangeFinderTiles.Contains(tile) && !_isMoving)
             {
                 UpdatePath(tile);
                 UpdateTileArrows();
             }
+            */
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -48,10 +57,21 @@ public class MouseController : MonoBehaviour
             }
         }
 
+        /*
         if (_isMoving && _path.Count > 0)
         {
             MoveAlongPath();
         }
+        */
+    }
+
+    public void EnablePlayerPlacement(List<Creature> creatures, List<OverlayTile> availableTiles)
+    {
+        // Create creature queue
+        _creatureQueue = new Queue<Creature>();
+        creatures.ForEach(x => _creatureQueue.Enqueue(x));
+
+        _availableTiles = availableTiles;
     }
     
     /// <summary>
@@ -99,19 +119,36 @@ public class MouseController : MonoBehaviour
     /// <param name="tile">The tile that was clicked.</param>
     private void HandleMouseClick(OverlayTile tile)
     {
-        tile.ShowTile();
-
-        if (_character == null)
+        if (IsPlacingCreatures)
         {
-            _character = Instantiate(characterPrefab).GetComponent<CharacterInfo>();
-            PositionCharacterOnTile(tile);
-            GetInRangeTiles();
+            if (!_availableTiles.Contains(tile)) return;
+            
+            var creature = _creatureQueue.Dequeue();
+            var creatureObj = Instantiate(creature.gameObject, characterContainer);
+            PositionCreatureOnTile(creatureObj.GetComponent<Creature>(), tile);
+
+            if (!IsPlacingCreatures)
+            {
+                _availableTiles.ForEach(x => x.HideTile());
+            }
         }
         else
         {
-            _isMoving = true;
-            tile.HideTile();
+            /*
+            if (_character == null)
+            {
+                _character = Instantiate(characterPrefab).GetComponent<Creature>();
+                PositionCreatureOnTile(_character, tile);
+                GetInRangeTiles();
+            }
+            else
+            {
+                _isMoving = true;
+                tile.HideTile();
+            }
+            */
         }
+        
     }
     
     /// <summary>
@@ -126,7 +163,7 @@ public class MouseController : MonoBehaviour
 
         if (Vector2.Distance(_character.transform.position, targetPosition) < 0.00001f)
         {
-            PositionCharacterOnTile(_path[0]);
+            PositionCreatureOnTile(_character, _path[0]);
             _path.RemoveAt(0);
         }
 
@@ -139,12 +176,13 @@ public class MouseController : MonoBehaviour
     /// <summary>
     /// Positions the character on the specified tile.
     /// </summary>
+    /// <param name="creature">The creature that will be placed</param>
     /// <param name="tile">The tile to position the character on.</param>
-    private void PositionCharacterOnTile(OverlayTile tile)
+    private void PositionCreatureOnTile(Creature creature, OverlayTile tile)
     {
-        _character.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y + 0.0001f, tile.transform.position.z);
-        _character.GetComponent<SpriteRenderer>().sortingOrder = tile.GetComponent<SpriteRenderer>().sortingOrder;
-        _character.standingOnTile = tile;
+        creature.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y + 0.0001f, tile.transform.position.z);
+        creature.GetComponent<SpriteRenderer>().sortingOrder = tile.GetComponent<SpriteRenderer>().sortingOrder;
+        creature.standingOnTile = tile;
     }
     
     /// <summary>

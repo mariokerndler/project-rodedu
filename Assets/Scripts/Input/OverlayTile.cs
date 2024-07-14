@@ -31,7 +31,7 @@ public class OverlayTile : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            HideTile();
+            //HideTile();
         }
     }
     
